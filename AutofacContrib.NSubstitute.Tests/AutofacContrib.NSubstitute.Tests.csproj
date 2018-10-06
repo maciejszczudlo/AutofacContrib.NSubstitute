@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="AutoSubstituteCollectionFixture.cs" />
     <Compile Include="AutoSubstituteFixture.cs" />
+    <Compile Include="ConcreteClassesResolvingFixture.cs" />
     <Compile Include="KeyedRegistrationFixture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ExampleFixture.cs" />

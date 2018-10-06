@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using Autofac;
@@ -36,12 +37,22 @@ namespace AutofacContrib.NSubstitute
                 throw new ArgumentNullException("service");
 
             var typedService = service as IServiceWithType;
+
+            if (typedService != null &&  typedService.ServiceType.IsClass)
+            {
+                var @params = ResolveDefaultValueParameters(typedService.ServiceType);
+                var rb0 = RegistrationBuilder.ForType(typedService.ServiceType).WithParameters(@params)            
+                    .InstancePerLifetimeScope();
+                return new[] { rb0.CreateRegistration() };
+            }
+
             if (typedService == null ||
                 !typedService.ServiceType.IsInterface ||
                 IsGenericListOrCollectionInterface(typedService.ServiceType) ||
                 typedService.ServiceType.IsArray ||
                 typeof(IStartable).IsAssignableFrom(typedService.ServiceType))
                 return Enumerable.Empty<IComponentRegistration>();
+
 
             var rb = RegistrationBuilder.ForDelegate((c, p) => Substitute.For(new[] {typedService.ServiceType}, null))
                 .As(service)
@@ -58,6 +69,25 @@ namespace AutofacContrib.NSubstitute
         private static bool IsGenericListOrCollectionInterface(Type serviceType)
         {
             return serviceType.IsGenericType && GenericCollectionTypes.Contains(serviceType.GetGenericTypeDefinition());
+        }
+
+        List<Parameter> ResolveDefaultValueParameters(Type type)
+        {
+            var @params = new List<Parameter>();
+
+            var constructorParameters = type.GetConstructors().FirstOrDefault().GetParameters();
+
+            foreach (var constructorParameter in constructorParameters)
+            {
+                if (constructorParameter.ParameterType.IsValueType)
+                {
+                    var defValue = Activator.CreateInstance(constructorParameter.ParameterType);
+                    var param = new NamedParameter(constructorParameter.Name, defValue);
+                    @params.Add(param);
+                }
+            }
+
+            return @params;
         }
     }
 }
